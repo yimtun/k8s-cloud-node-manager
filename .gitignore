@@ -1,0 +1,14 @@
+.DS_Store
+.vscode
+.idea
+certs/*
+!certs/.gitignore
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.backup
+extended-api-server-kubeconfig
+config-eks
+local_kubeconfig
+node-restarter-kubeconfig
+tls.key
+tls.crt

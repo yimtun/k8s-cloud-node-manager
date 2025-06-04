@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-restarter
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-restart-only
+rules:
+  - apiGroups: ["infraops.michael.io"]
+    resources: ["nodes/restart"]
+    resourceNames: [ "10.205.13.240" ]  # only allow restart node 10.205.13.240
+    verbs: ["create"]       # create   restart api is  POST
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-restarter-binding
+subjects:
+  - kind: ServiceAccount
+    name: node-restarter
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: node-restart-only
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: node-restarter-token
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: node-restarter
+type: kubernetes.io/service-account-token
+---
+
+## create a test sa for kubectl  ,test use k8s  limit users  privileges

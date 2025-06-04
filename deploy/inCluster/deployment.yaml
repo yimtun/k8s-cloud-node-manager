@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extended-api-server
+  namespace: default  #  Namespace
+spec:
+  replicas: 1
+  selector:  # template.metadata.labels
+    matchLabels:
+      app: extended-api-server
+  template:
+    metadata:
+      labels:  # selector.matchLabels
+        app: extended-api-server
+    spec:
+      serviceAccountName: extended-api-server
+      containers:
+        - name: api-server
+          image: yimtune/ex-extension-api:v0.2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MY_NODE_NAME      #Downward API
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: AWS_REGION
+              value: us-east-1
+            - name: TENCENTCLOUD_SECRET_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tencentcloud-credentials
+                  key: TENCENTCLOUD_SECRET_ID
+            - name: TENCENTCLOUD_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tencentcloud-credentials
+                  key: TENCENTCLOUD_SECRET_KEY
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: AWS_SECRET_ACCESS_KEY
+          ports:
+            - containerPort: 443  #  HTTPS（ tcp 443）
+          volumeMounts:
+            - name: tls-certs
+              mountPath: "/etc/tls"  # mount certs
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: extended-api-tls  # Secret  for tls certs

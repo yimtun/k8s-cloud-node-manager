@@ -1,0 +1,13 @@
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1.infraops.michael.io
+spec:
+  version: v1
+  group: infraops.michael.io
+  groupPriorityMinimum: 2000
+  service:
+    name: infraops-service
+    namespace: default
+  versionPriority: 10
+  caBundle: "xxx"
