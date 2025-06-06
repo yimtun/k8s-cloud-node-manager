@@ -1,21 +1,25 @@
-# 在开启OIDC的eks集群内运行
-
-运行shell 命令的 工作路径是 工程目录下的docs
-
-你需要 配置好 aws 命令行工具 并提前安装好terraform 
+# 在开启了OIDC的EKS集群内运行
 
 
-# 使用示例tf配置创建支持OIDC的eks集群
+- EKS开启OIDC支持后Pod中运行的myapiserver可以通过ServiceAccount来访问 AWS API，这也是AWS 推荐的访问方式
+
+- 在本文档内容中，运行shell命令的工作路径是工程目录下的docs，在编辑本文档时验证命令的时候使用的ide可以识别md文件中的shell命令，可以在md中点击直接运行会自动创建一个终端并执行命令，所以基本每条命令开始前都会有一个切换路径cd命令
+
+- 前置条件： 安装并配置好awscli 安装好terraform 
+
+
+## 使用示例terraform创建支持OIDC的eks集群
+
 
 ```shell
 cd ../examples/oidc_eks_tf/
 terraform apply
 ```
 
-已经使用tf 文件设置好了rbac 所以不再需要执行 deploy/inCluster/rbac.yaml
+在tf中已经设置好了rbac  所以后面不再需要执行 deploy/inCluster/rbac.yaml
 
 
-获取eks的kubeconfig文件
+## 获取eks的kubeconfig文件
 
 ```shell
 cd ..
@@ -23,7 +27,7 @@ aws eks update-kubeconfig --name my-eks-cluster --region us-east-1 --kubeconfig 
 ```
 
 
-生成证书
+## 生成证书
 
 ```shell
 cd ../hack
@@ -31,12 +35,12 @@ sh gen.sh
 ```
 
 
-将文件certs/caBundle.txt 中的内容  复制到 文件 deploy/apiservice.yaml  caBundle 中
+**将文件certs/caBundle.txt 中的内容复制到 文件 deploy/apiservice.yaml  caBundle中**
 
 
 
 
-创建 secert 存入证书
+## 创建 secert 用于存储tls证书
 
 ```shell
 cd ..
@@ -46,7 +50,7 @@ kubectl --kubeconfig ./config-eks create secret tls extended-api-tls --cert=./ce
 
 
 
-虽然是单一的 aws 集群 这里还是选择创建一个空的 tencentcloud-credentials 避免报错
+**虽然是单一的 aws 集群 这里还是选择创建一个空的 tencentcloud-credentials 避免secretKeyRef报错**
 
 ```shell
 cd ..
@@ -58,7 +62,9 @@ kubectl --kubeconfig ./config-eks create secret generic tencentcloud-credentials
 ```
 
 
-使用 eks 的 OIDC  所以需要执行 eks_oidc_deployment.yaml
+## 执行清单文件
+
+使用eks的OIDC 所以需要执行 eks_oidc_deployment.yaml
 
 ```shell
 cd ..
@@ -71,11 +77,14 @@ cd ..
 kubectl --kubeconfig ./config-eks  apply -f deploy/apiservice.yaml  -n default
 ```
 
+
 ```shell
 cd ..
 kubectl --kubeconfig ./config-eks  apply -f deploy/inCluster/service.yaml  -n default
 ```
 
+
+##  查看 apiservice 状态
 
 
 ```shell
@@ -91,8 +100,7 @@ v1.infraops.michael.io   default/infraops-service   True        36s
 ```
 
 
-
-
+## 查看接口文档
 
 ```shell
 cd ..
@@ -130,10 +138,21 @@ kubectl --kubeconfig ./config-eks get --raw   "/apis/infraops.michael.io/v1" | j
 }
 ```
 
+**当前使用的核心资源nodes所以上面输出json文件中的nodes资源相关接口并没有实现**
 
 
 
-# curl 命令测试接口
+##  测试
+
+
+
+下面的两种测试方法 可以展示 这里的AA  本质上还是是一个普通http的接口
+
+ 
+
+
+
+###  curl 命令测试接口
 
 从config-eks 中获取ca
 
@@ -166,10 +185,9 @@ kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 https://DA9C70C8535A5ADDE9C74C3600756B25.gr7.us-east-1.eks.amazonaws.com
 ```
 
-和  server
-获取临时 
 
-curl 测试接口
+
+curl 测试命令
 
 ```shell
 curl -X POST \
@@ -186,7 +204,14 @@ Failed to get node testNODE: nodes "testNODE" not found
 这个调用是正常的 因为确实没有这个node 
 
 
-## test plugin
+###  kubectl  plugin 方式测试
+
+安装kubeclt plugin
+
+```shell
+go build  -o /usr/local/bin/kubectl-restart ../kubectlplugins/kubectl-restart.go
+```
+
 
 
 ```shell
@@ -203,7 +228,11 @@ ip-10-0-10-98.ec2.internal    Ready    <none>   12m   v1.32.3-eks-473151a
 ip-10-0-11-190.ec2.internal   Ready    <none>   12m   v1.32.3-eks-473151a
 ```
 
-这里可以看出 数据源实践就是 k8s 核心资源nodes 
+这里可以看出 这里使用的数据源实际上就是 k8s 核心资源nodes 
+
+
+
+重启node
 
 
 ```shell
@@ -219,7 +248,7 @@ kubectl  restart ip-10-0-11-190.ec2.internal
 请求失败，状态码: 500，响应: you can't rebootip-10-0-11-190.ec2.internalbecause I run on it
 ```
 
-使用 Downward API 判断出来 myapiserver 这个pod 正运行在节点ip-10-0-11-190.ec2.internal上 所以终止了自杀行为
+myapiserver 使用 Downward API 判断出来 myapiserver这个pod 正运行在节点 ip-10-0-11-190.ec2.internal上  所以终止了重启nodede 自杀行为
 
 我们可以确认下
 
@@ -258,7 +287,7 @@ aws ssm start-session --target  i-0da7c9af35266791d    --region=us-east-1
 ```
 
 
-销毁集群
+## 销毁测试eks集群
 
 ```shell
 cd ../examples/oidc_eks_tf/

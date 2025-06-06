@@ -5,10 +5,13 @@
 > **多云环境下的 Kubernetes 扩展 API Server，用于节点管理**
 
 **项目特性：**
-- 支持在单一 Kubernetes 集群内，对接和管理来自 AWS、腾讯云等不同云厂商的节点，实现多云节点的统一运维和操作。
+- 支持在单一 Kubernetes 集群内，对接和管理来自 AWS、腾讯云等不同云厂商的节点（关于这种架构下涉及到的高性能通用cni会在另一个项目中实现），实现多云节点的统一运维和操作。
 - 对于云厂商托管的 Kubernetes 集群（如 AWS EKS、腾讯云 TKE），本项目可原生支持。
 - 通过各云厂商托管集群的node ProviderID格式自动识别云厂商类型和获取云服务器id，自建集群需保证ProviderID格式同对应云厂商一致，自建时可手动设置或借助其他工具实现。
-- 没有使用框架和底层库实现，比如 apiserver-builder-alpha 和 k8s.io/code-generator 展示了一个不同的使用方式 即 不注册AA资源到k8s   仅通过 API Aggregation 机制暴露了标准 Kubernetes 风格的 API 端点 来实现业务需求 是一种轻量化的实现
+- 没有使用框架和底层库实现，比如 apiserver-builder-alpha 和 k8s.io/code-generator 展示了一个不同的使用方式 即 不注册AA资源到k8s   仅通过 API Aggregation （AA） 机制暴露了标准 Kubernetes 风格的 API 端点 来实现业务需求 是一种轻量化的实现
+- 将对云node节点的云服务器的操作统一接入到Kubernetes标准接口 可利用Kubernetes rabc 控制云服务器资源操作权限 比如开发人员不必拥有云厂商帐号就可以操作开发画家的 node节点
+- 可应用于混沌工程，通过AA扩展的接口，所用到的数据源就是当前集群的核心资源nodes 不易出现错误。
+- 部署方式安全严格 涉及自签证书的使用 强制验证ca等
 ---
 
 ## 概述
@@ -46,7 +49,7 @@ Kubernetes 提供两种方式向集群添加custom resource
    只声明资源类型，不处理数据，**实际很少这样用**，除非只是为了存储信息。
 
 2. **CRD + Custom Controller**  
-   **最常见的 Operator 模式**，即“声明资源 + 自动化管理”，是 Operator 的标准实现方式。
+   **最常见的 Operator 模式**，即“声明资源 + 自动化管理”，是 Operator 的标准实现方式 有大量开源项目和社区资料。
 
 3. **只有AA接口 不注册AA资源**
    不向Kubernetes注册AA资源，仅暴露标准 Kubernetes API 风格的端点。
@@ -125,7 +128,7 @@ kubectl create secret tls extended-api-tls --cert=certs/tls.crt --key=certs/tls.
 - 如果是自建的集群 且 同时使用了 腾讯云和aws上的云服务器作为 node 节点  属于多云环境 需要同时配置 secret aws-credentials 和 tencentcloud-credentials
 
 
-配置  secret  credentials的命令
+配置  secret  credentials 的命令
 
 腾讯云
 ```shell
@@ -136,7 +139,7 @@ kubectl create secret generic tencentcloud-credentials \
 
 aws
 ```shell
-kubectl --kubeconfig ./config-eks delete secret aws-credentials -n default
+kubectl delete secret aws-credentials -n default
 kubectl create secret generic aws-credentials \
   --from-literal=AWS_ACCESS_KEY_ID="xxxx" \
   --from-literal=AWS_SECRET_ACCESS_KEY="xxxx" \
@@ -163,21 +166,36 @@ aws eks update-kubeconfig --name my-eks-cluster --region us-east-1 --kubeconfig 
 
 
 ### 部署方式选择
-本项目支持三种部署方式：
-1. **原生 Kubernetes 集群部署**
+
+- 除了OIDC的EKS不支持集群外部署，其他的场景都支持集群外和集群内两种部署方式。
+- 除非用于开发调试 在所有环境下都推荐集群内部署
+
+综合上述观点 本项目现提供下面几种环境下的部署文档：
+
+1. **在自建的集群内部署**
     - 适用于自建 Kubernetes 集群
-    - 支持集群内和集群外两种模式
-    - [详细部署指南](docs/deployment/native-k8s.md)
+    - 适用于多云环境
+    - [详细部署指南](docs/inCluster_CN.md)
 
-2. **AWS EKS 集群部署**
+2. **在开启OIDC的EKS集群内部署**
     - 支持 EKS OIDC 认证
-    - 适用于 AWS 托管集群
-    - [详细部署指南](docs/deployment/eks.md)
+    - 适用于 AWS 托管集群 单云环境
+    - [详细部署指南](docs/eks_inCluster_OIDC_CN.md)
+   
+3. **在未开启OIDC的EKS集群内部署**
+    - 适用于 AWS 托管集群 单云环境
+    - [详细部署指南](docs/eks_inCluster_CN.md)
 
-3. **集群外部署（开发环境）**
+4. **在TKE集群内部署**
+    - 适用于 TKE 托管集群 单云环境
+    - [详细部署指南](docs/tke_inCluster_CN.md)
+
+5. **在集群外部署（开发环境）**
+    - 适用于自建 Kubernetes 集群
     - 适用于开发和调试
     - 支持本地运行
-    - [详细部署指南](docs/deployment/out-of-band.md)
+    - 适用于多云环境
+    - [详细部署指南](docs/out-of-band-deployment.md)
 
 ### 验证部署
 1. 检查 API Service 状态
