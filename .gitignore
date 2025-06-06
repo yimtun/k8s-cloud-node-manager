@@ -6,6 +6,7 @@ certs/*
 **/.terraform/
 **/terraform.tfstate
 **/terraform.tfstate.backup
+**/.terraform.tfstate.lock.info
 extended-api-server-kubeconfig
 config-eks
 local_kubeconfig

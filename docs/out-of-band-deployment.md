@@ -1,5 +1,6 @@
 # 部署在 k8s 集群外部
 
+
 **用于调试开发环境使用**
 
 ## 生成证书
@@ -25,24 +26,15 @@ certs/caBundle.txt
 
 ### 修改配置文件
 
+请确保已经设置好了  文件deploy/apiservice.yaml的caBundle
 
-deploy/outCluster/outOfCluster.yaml
+
+
+deploy/outCluster/service.yaml
+
+需要设置一个ExternalName Service 将你本地运行的myapiserver 暴露给 Kubernetes apiserver 不一定是myapiser的实际运行ip和端口 也可以是经过代理后的入口 只要证书和入口的域名匹配和网络可达即可
 
 ```yaml
-apiVersion: apiregistration.k8s.io/v1
-kind: APIService
-metadata:
-  name: v1.infraops.michael.io
-spec:
-  version: v1
-  group: infraops.michael.io
-  groupPriorityMinimum: 2000
-  service:
-    name: infraops-service
-    namespace: default
-  versionPriority: 10
-  caBundle: 替换为 certs/caBundle.txt 里面的内容
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -50,15 +42,16 @@ metadata:
   namespace: default
 spec:
   type: ExternalName
-  externalName: 10.211.55.2   # 修改为扩展server 运行的地址
+  externalName: 10.211.55.2   # myapiserver run ip 
   ports:
-    - port: 443               # 修改扩展server 运行的端口
+    - port: 443               # myapiserver run port 
       protocol: TCP
 ```
 
 
 ```bash
-kubectl apply -f deploy/outCluster/outOfCluster.yaml
+kubectl apply -f deploy/apiservice.yaml
+kubectl apply -f deploy/outCluster/service.yaml
 ```
 
 
@@ -80,13 +73,18 @@ cd hack
 sh get_kubeconfig_from_token.sh  default extended-api-server-token
 ```
 
-加载 云接口认证信息  启动apiserver 
+运行前 加载 云接口认证信息   启动apiserver 
 
 ```bash
 export TENCENTCLOUD_SECRET_ID="xxx"
 export TENCENTCLOUD_SECRET_KEY="xxx"
-export TENCENTCLOUD_REGION="ap-guigu"
+export TENCENTCLOUD_REGION="xxx"
+
+export  AWS_ACCESS_KEY_ID="xxxx"
+export  AWS_SECRET_ACCESS_KEY="xxxx" 
+export  AWS_REGION="xxxx"
 ```
+
 
 
 

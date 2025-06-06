@@ -285,15 +285,17 @@ provider "kubernetes" {
 }
 
 #
-output "cluster_endpoint" {
-  description = "EKS 集群端点"
-  value       = aws_eks_cluster.main.endpoint
-}
-
-output "cluster_name" {
-  description = "EKS 集群名称"
-  value       = aws_eks_cluster.main.name
-}
+# output "cluster_endpoint" {
+#   description = "EKS 集群端点"
+#   value       = aws_eks_cluster.main.endpoint
+#   depends_on = [aws_eks_cluster.main]
+# }
+#
+# output "cluster_name" {
+#   description = "EKS 集群名称"
+#   value       = aws_eks_cluster.main.name
+#   depends_on = [aws_eks_cluster.main]
+# }
 
 # output "cluster_certificate_authority_data" {
 #   description = "EKS "
@@ -435,9 +437,10 @@ resource "kubernetes_service_account" "app_service_account" {
       "eks.amazonaws.com/role-arn" = aws_iam_role.app_role.arn
     }
   }
+  depends_on = [aws_eks_cluster.main]
 }
-
 #
+# #
 resource "kubernetes_cluster_role" "app_cluster_role" {
   metadata {
     name = "basic-k8s-extension-api"
@@ -447,6 +450,7 @@ resource "kubernetes_cluster_role" "app_cluster_role" {
     resources  = ["nodes"]
     verbs      = ["get" ]
   }
+  depends_on = [aws_eks_cluster.main]
 }
 
 #  ClusterRoleBinding
@@ -464,6 +468,7 @@ resource "kubernetes_cluster_role_binding" "app_cluster_role_binding" {
     name      = kubernetes_service_account.app_service_account.metadata[0].name
     namespace = kubernetes_service_account.app_service_account.metadata[0].namespace
   }
+  depends_on = [aws_eks_cluster.main]
 }
 
 
