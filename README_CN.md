@@ -2,7 +2,7 @@
 
 [🇺🇸 Switch to English English Version](README.md)
 
-> **多云环境下的 Kubernetes 扩展 API Server，用于节点管理**
+> **通过API Aggregation (AA)机制扩展Kubernetes，用于将Kubernetes相关的云服务器管理工作统一在Kubernetes接口中 展现了一种无需注册资源的轻量化的实现**
 
 **项目特性：**
 - 支持在单一 Kubernetes 集群内，对接和管理来自 AWS、腾讯云等不同云厂商的节点（关于这种架构下涉及到的高性能通用cni会在另一个项目中实现），实现多云节点的统一运维和操作。
@@ -69,11 +69,11 @@ Kubernetes 提供两种方式向集群添加custom resource
    本项目的 restart 是一个动作型子资源，类似于 Kubernetes 内置的 log、exec 等。这类子资源只能通过 AA 实现，CRD 仅支持 status 和 scale 两种内置子资源，无法满足需求。
 
 2. **命令式接口需求**
-  本项目需要实现命令式（imperative）接口，如 `/restart`，用于直接触发节点重启操作。这类接口不属于 Kubernetes 传统的声明式 API，无法通过 CRD 直接实现，而 AA 机制则为此类操作提供了灵活的支持。
+    本项目需要实现命令式（imperative）接口，如 `/restart`，用于直接触发节点重启操作。这类接口不属于 Kubernetes 传统的声明式 API，无法通过 CRD 直接实现，而 AA 机制则为此类操作提供了灵活的支持。
 
 3. **无需 Controller 监听和调和（watch 和 reconcile）** 
-  本项目不需要注册AA资源（`apis/infraops.michael.io/v1/nodes`） ，实际上数据源是复用的核心资源资源(`/api/v1/nodes`) 也不需要watch和reconcile其他资源，也就不需要Custom Controller，因此无需采用 AA + Custom Controller 的模式。
-  在用户角度看 就像是为核心资源添加了一个子资源restart :  `kubectl restart nodeName`
+    本项目不需要注册AA资源（`apis/infraops.michael.io/v1/nodes`） ，实际上数据源是复用的核心资源资源(`/api/v1/nodes`) 也不需要watch和reconcile其他资源，也就不需要Custom Controller，因此无需采用 AA + Custom Controller 的模式。
+    在用户角度看 就像是为核心资源添加了一个子资源restart :  `kubectl restart nodeName`
 
 ---
 
@@ -220,7 +220,6 @@ kubectl get --raw "/apis/infraops.michael.io/v1" | jq .
 ```
 
 
-[查看完整部署文档](docs/quick-start.md)
 
 ---
 
@@ -256,9 +255,55 @@ kubectl get --raw "/apis/infraops.michael.io/v1" | jq .
   ```bash
   kubectl get node
   ```
- 
+
 选择一个node 测试重启
 
   ```bash
   kubectl restart <nodename>
   ```
+
+## 测试 借助Kubernetes的权限系统 保护接口
+
+创建一个受限的 Kubernetes 用户
+
+```shell
+kubectl apply -f e2e/rbac.yaml
+```
+
+```shell
+sh ./e2e/get_kubeconfig_from_sa.sh default
+```
+
+```shell
+export KUBECONFIG=./node-restarter-kubeconfig
+```
+
+
+
+```shell
+kubectl   restart  10.205.13.240
+```
+
+输出：
+
+```text
+使用 Token 认证
+请求失败，状态码: 500，响应: Failed to get node 10.205.13.240: nodes "10.205.13.240" not found
+```
+
+这个输出是符合 e2e/rbac.yaml 定义的  虽然当前没有找到node  但实际上这已经通过了Kubernetes的权限校验
+
+
+
+```sehll
+kubectl   restart  10.205.13.241
+```
+
+输出:
+
+```text
+使用 Token 认证
+请求失败，状态码: 403，响应: {"kind":"Status","apiVersion":"v1","metadata":{},"status":"Failure","message":"nodes.infraops.michael.io \"10.205.13.24idden: User \"system:serviceaccount:default:node-restarter\" cannot create resource \"nodes/restart\" in API group \"infraops.michael.io\" at the cluster scope","reason":"Forbidden","details":{"name":"10.205.13.241","group":"infraops.michael.io","kind":"nodes"},"code":403}
+```
+
+这个输出是符合 e2e/rbac.yaml 定义的  因为当前用户没有权限去 restart 节点 10.205.13.241 这里就没有通过Kubernetes的权限校验

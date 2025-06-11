@@ -13,3 +13,5 @@ local_kubeconfig
 node-restarter-kubeconfig
 tls.key
 tls.crt
+record.md
+record_CN.md

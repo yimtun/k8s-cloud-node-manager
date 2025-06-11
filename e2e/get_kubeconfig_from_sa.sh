@@ -17,9 +17,19 @@ SA_TOKEN=$(kubectl get secret node-restarter-token -n $NAMESPACE -o jsonpath='{.
 
 #
 echo "get cluster info..."
+# CLUSTER_NAME=$(kubectl config current-context)
+# CLUSTER_CA=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
+# API_SERVER=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.server}')
+
+
+# Get current context and cluster info in one go
 CLUSTER_NAME=$(kubectl config current-context)
-CLUSTER_CA=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
-API_SERVER=$(kubectl config view --raw -o jsonpath='{.clusters[0].cluster.server}')
+CURRENT_CLUSTER=$(kubectl config view --raw -o jsonpath='{.contexts[?(@.name=="'$CLUSTER_NAME'")].context.cluster}')
+CLUSTER_CA=$(kubectl config view --raw -o jsonpath='{.clusters[?(@.name=="'$CURRENT_CLUSTER'")].cluster.certificate-authority-data}')
+API_SERVER=$(kubectl config view --raw -o jsonpath='{.clusters[?(@.name=="'$CURRENT_CLUSTER'")].cluster.server}')
+
+
+
 
 #  create new  kubeconfig
 echo " create  kubeconfig file..."
