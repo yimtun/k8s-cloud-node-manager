@@ -1,33 +1,45 @@
-# build image
+# Build stage
 FROM golang:1.23.3 AS builder
 
-#
+# Set working directory
 WORKDIR /app
 
-# copy go.mod and  go.sum
+# Copy go.mod and go.sum first for better caching
 COPY go.mod go.sum ./
 
-#
+# Download dependencies
 RUN go mod download
 
-# copy code
+# Copy source code
 COPY . .
 
-# build
-RUN CGO_ENABLED=0 GOOS=linux go build -o metadata-apiserver apiserver.go
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o k8s-cloud-node-manager apiserver.go
 
-#
+# Runtime stage
 FROM alpine:3.19
 
-#  install ca-certificates
+# Install ca-certificates for HTTPS support
 RUN apk --no-cache add ca-certificates
 
-#
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# Set working directory
 WORKDIR /app
 
-#
-COPY --from=builder /app/metadata-apiserver .
+# Copy binary from builder stage
+COPY --from=builder /app/k8s-cloud-node-manager .
 
+# Change ownership to non-root user
+RUN chown appuser:appgroup k8s-cloud-node-manager
 
-#
-CMD ["./metadata-apiserver"]
+# Switch to non-root user
+USER appuser
+
+# Expose port 443 for HTTPS
+EXPOSE 443
+
+# Run the application
+CMD ["./k8s-cloud-node-manager"]
