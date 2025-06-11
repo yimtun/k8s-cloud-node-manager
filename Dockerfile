@@ -43,3 +43,5 @@ EXPOSE 443
 
 # Run the application
 CMD ["./k8s-cloud-node-manager"]
+
+# docker build . -t yimtune/k8s-cloud-node-manager:v0.2
