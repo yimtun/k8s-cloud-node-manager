@@ -164,7 +164,7 @@ Based on the above considerations, this project currently provides deployment do
 2. **Deploy in OIDC-Enabled EKS Clusters**
    - Supports EKS OIDC authentication
    - Suitable for AWS managed clusters, single cloud environment
-   - [Detailed Deployment Guide](docs/eks_inCluster_OIDC_CN.md)
+   - [Detailed Deployment Guide](docs/eks_inCluster_OIDC.md)
 
 3. **Deploy in Non-OIDC EKS Clusters**
    - Suitable for AWS managed clusters, single cloud environment
