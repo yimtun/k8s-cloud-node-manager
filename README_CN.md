@@ -1,4 +1,4 @@
-# myapiserer
+# k8s-cloud-node-manager
 
 [🇺🇸 Switch to English English Version](README.md)
 
@@ -16,7 +16,7 @@
 
 ## 概述
 
-myapiserer 是一个基于 Kubernetes API Server Aggregation（AA）机制实现的 API 扩展。  
+k8s-cloud-node-manager 是一个基于 Kubernetes API Server Aggregation（AA）机制实现的 API 扩展。  
 与 CustomResourceDefinition（CRD）不同，CRD 是声明式的，由 Kubernetes 控制平面处理，而 AA 允许我们部署独立的 API 服务器来为自定义资源提供专门的实现。主 API 服务器将自定义 API 的请求委托给这个扩展服务器，使其对所有客户端可用。这种方式使我们能够实现复杂的业务逻辑（如调用云服务商 API 重启节点），同时保持 Kubernetes API 标准。支持集群内和集群外两种部署方式，并提供 kubectl 插件以方便节点操作。  
 下文将介绍 Kubernetes 扩展的主要方式及本项目的选型理由。
 
@@ -102,11 +102,11 @@ cd hack
 sh gen.sh
 ```
 - 如需修改 IP/命名空间，请编辑 `hack/gen.sh` 用你自定义的namespace 替换 default即可。
-- 如果使用 ExternalName Service 让 myapiserver在Kubernetes集群外运行，生成证书前请修改hack/gen.sh脚本确保签发证书时 设置正确的subjectAltName 以当前示例 替换IP:10.211.55.2 内容即可
+- 如果使用 ExternalName Service 让 k8s-cloud-node-manager在Kubernetes集群外运行，生成证书前请修改hack/gen.sh脚本确保签发证书时 设置正确的subjectAltName 以当前示例 替换IP:10.211.55.2 内容即可
 - 脚本会在 `certs/` 目录生成证书，并生成文件 `certs/caBundle.txt` 该文件内容用于填充 deploy/apiservice.yaml 文件的caBundle 生成证书后请务必配置好该文件
 
 
-如果将myapiserver部署在Kubernetes内,需要创建tls secret供pod内程序启动时加载
+如果将k8s-cloud-node-manager部署在Kubernetes内,需要创建tls secret供pod内程序启动时加载
 
 ```shell
 kubectl create secret tls extended-api-tls --cert=certs/tls.crt --key=certs/tls.key -n default
