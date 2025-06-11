@@ -36,7 +36,7 @@ COPY --from=builder /app/k8s-cloud-node-manager .
 COPY --from=builder /app/certs ./certs
 
 # Change ownership to non-root user
-RUN chown -R appuser:appgroup k8s-cloud-node-manager certs
+RUN chown -R appuser:appgroup k8s-cloud-node-manager
 
 # Add capability to bind to privileged ports
 RUN setcap 'cap_net_bind_service=+ep' k8s-cloud-node-manager
