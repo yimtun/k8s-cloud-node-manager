@@ -62,7 +62,7 @@ kubectl  apply -f ../deploy/apiservice.yaml
 
 ```shell
 cd ..
-kubectl --kubeconfig ./config-eks   get apiservice v1.infraops.michael.io
+kubectl    get apiservice v1.infraops.michael.io
 ```
 
 输出展示：
@@ -77,7 +77,7 @@ v1.infraops.michael.io   default/infraops-service   True        36s
 
 ```shell
 cd ..
-kubectl --kubeconfig ./config-eks get --raw   "/apis/infraops.michael.io/v1" | jq .
+kubectl  get --raw   "/apis/infraops.michael.io/v1" | jq .
 ```
 
 输出展示：

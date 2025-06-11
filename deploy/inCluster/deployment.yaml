@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: extended-api-server
+  name: k8s-cloud-node-manager
   namespace: default  #  Namespace
 spec:
   replicas: 1
   selector:  # template.metadata.labels
     matchLabels:
-      app: extended-api-server
+      app: k8s-cloud-node-manager
   template:
     metadata:
       labels:  # selector.matchLabels
-        app: extended-api-server
+        app: k8s-cloud-node-manager
     spec:
-      serviceAccountName: extended-api-server
+      serviceAccountName: k8s-cloud-node-manager
       containers:
         - name: api-server
-          image: yimtune/ex-extension-api:v0.2
+          image: yimtune/k8s-cloud-node-manager:v0.2
           imagePullPolicy: IfNotPresent
           env:
             - name: MY_NODE_NAME      #Downward API

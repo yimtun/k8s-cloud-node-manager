@@ -5,7 +5,7 @@ metadata:
   namespace: default         #  Deployment  and  Secret same ns
 spec:
   selector:
-    app: extended-api-server  # Deployment 的 template.metadata.labels
+    app: k8s-cloud-node-manager  # Deployment 的 template.metadata.labels
   ports:
     - name: https
       protocol: TCP
